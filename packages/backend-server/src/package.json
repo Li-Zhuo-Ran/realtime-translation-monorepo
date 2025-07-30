@@ -1,0 +1,34 @@
+{
+  "name": "@realtime-translation/signa-server",
+  "version": "1.0.0",
+  "description": "科大讯飞实时语音转写与翻译API的后端签名服务。",
+  "main": "signa-server.js",
+  "scripts": {
+    "start": "node signa-server.js",
+    "dev": "nodemon signa-server.js",
+    "test": "echo \"Error: no tests specified for signa-server.\" && exit 0"
+  },
+  "keywords": [
+    "科大讯飞",
+    "API签名",
+    "Node.js",
+    "Express",
+    "鉴权",
+    "实时翻译",
+    "语音转写"
+  ],
+  "author": "Li-Zhuo-Ran",
+  "license": "MIT",
+  "dependencies": {
+    "body-parser": "^2.2.0",
+    "cors": "^2.8.5",
+    "crypto-js": "^4.2.0",
+    "express": "^5.1.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.4"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
