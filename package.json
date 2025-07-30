@@ -1,0 +1,35 @@
+{
+  "name": "realtime-translation",
+  "version": "1.0.0",
+  "private": true,
+  "description": "基于科大讯飞SDK的实时语音转写与翻译Monorepo项目，包含后端签名服务和前端浮窗小部件。",
+  "author": "Li-Zhuo-Ran",
+  "license": "ISC",
+  "main": "index.js",
+  "scripts": {
+    "start-server": "node servers/signa-server/signa-server.js",
+    "start-frontend": "npm start --workspace @realtime-translation/frontend-widget",
+    "start-all": "npm run start-server & npm run start-frontend",
+    "install-all": "npm install",
+    "test": "echo \"Error: no tests specified for the monorepo root.\" && exit 0"
+  },
+  "keywords": [
+    "实时翻译",
+    "语音转写",
+    "科大讯飞",
+    "Monorepo",
+    "Node.js",
+    "Express",
+    "前端小部件"
+  ],
+  "workspaces": [
+    "packages/*",
+    "servers/*"
+  ],
+  "dependencies": {
+    "body-parser": "^2.2.0",
+    "cors": "^2.8.5",
+    "crypto-js": "^4.2.0",
+    "express": "^5.1.0"
+  }
+}
