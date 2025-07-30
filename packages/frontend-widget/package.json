@@ -1,0 +1,41 @@
+{
+  "name": "@realtime-translation/frontend-widget",
+  "version": "1.0.0",
+  "description": "科大讯飞实时语音转写与翻译的前端小部件，基于官方SDK改造。",
+  "main": "dist/index.cjs.js",
+  "module": "dist/index.esm.js",
+  "browser": "dist/index.umd.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "src",
+    "app.js",
+    "index.html"
+  ],
+  "scripts": {
+    "start": "npx http-server . -p 8081",
+    "dev": "npm run start",
+    "build": "echo 'No explicit build step for this pre-compiled widget, assuming dist files are provided.'",
+    "lint": "echo 'No linting configured for this widget.'",
+    "test": "echo 'No tests configured for this widget.'"
+  },
+  "keywords": [
+    "科大讯飞",
+    "实时转写",
+    "实时翻译",
+    "语音",
+    "前端",
+    "widget",
+    "SDK",
+    "JavaScript"
+  ],
+  "author": "Li-Zhuo-Ran",
+  "license": "MIT",
+  "dependencies": {
+    "http-server": "^14.1.1" // 添加 http-server 依赖，用于本地快速启动 index.html
+  },
+  "devDependencies": {},
+  "publishConfig": {
+    "access": "public"
+  }
+}
