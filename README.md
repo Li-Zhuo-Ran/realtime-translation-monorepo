@@ -46,6 +46,7 @@ A monorepo for real-time translation widget (frontend) and its backend service (
 
 ## 📦 项目结构
 
+```
 realtime-translation-monorepo/
 ├── packages/                               # 前端小部件相关代码
 │   └── frontend-widget/
@@ -68,7 +69,7 @@ realtime-translation-monorepo/
 ├── package.json                            # Monorepo 根配置：定义工作区、通用脚本和共享依赖
 ├── package-lock.json                       # Monorepo 依赖锁定文件
 └── README.md                               # 项目主 README 文件
-
+```
 
 ## 🚀 快速启动 (本地开发)
 
