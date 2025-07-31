@@ -30,11 +30,15 @@ document.addEventListener('DOMContentLoaded', () => {
     let websocket = null; // WebSocket 实例
     let recorder = null;  // RecorderManager 实例
 
-    // 直接存储最新的完整文本，不再按 segId 分片
-    let currentTranscriptionText = ""; // 存储实时转写（源语言，英文）的最新完整文本
-    let currentTranslationText = "";   // 存储实时翻译（目标语言，中文）的最新完整文本
-
     let isRecording = false; // 用于追踪录音状态
+
+    // 用于存储所有已“固化”的最终结果
+    let finalizedTranscriptionText = ""; 
+    let finalizedTranslationText = "";
+    
+    // 用于存储当前正在识别的、尚未“固化”的句子片段
+    let tempTranscriptionFragment = "";
+    let tempTranslationFragment = "";
 
     /**
      * 更新 UI 显示
@@ -47,7 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
         translationResultContentDiv.textContent = translationText;
     }
 
-        /**
+    /**
      * 渲染科大讯飞返回的实时结果
      * @param {string} resultData 从WebSocket收到的JSON字符串
      */
@@ -59,54 +63,73 @@ document.addEventListener('DOMContentLoaded', () => {
                 updateUI(`错误: ${res.desc}`, `错误: ${res.desc}`);
                 stopRecording(); 
                 break;
+
             case 'started':
                 console.log('讯飞实时转写服务已启动! SID:', res.sid);
-                currentTranscriptionText = "讯飞服务已启动，请开始说话...";
-                currentTranslationText = "讯飞服务已启动，请开始说话...";
-                updateUI(currentTranscriptionText, currentTranslationText);
+                // 启动时清空所有文本状态
+                finalizedTranscriptionText = "";
+                finalizedTranslationText = "";
+                tempTranscriptionFragment = "";
+                tempTranslationFragment = "";
+                updateUI("讯飞服务已启动，请开始说话...", "讯飞服务已启动，请开始说话...");
                 break;
+
             case 'result':
                 const innerData = JSON.parse(res.data);
-                console.log("收到的原始 result 数据:", res);
-                console.log("解析后的 innerData (res.data):", innerData);
+                const isFinal = innerData.cn?.st?.type === "0"; // 检查最终结果标志
 
-                // 优先处理带有翻译结果的 biz: "trans" 消息
+                // 1. 优先处理带有翻译结果的消息 (biz: "trans")
+                //    这类消息用于更新当前句子片段的翻译内容
                 if (innerData.biz === "trans") {
-                    if (typeof innerData.src === 'string') {
-                        currentTranscriptionText = innerData.src; // 更新源语言（英文）转写文本
-                    }
-                    if (typeof innerData.dst === 'string') {
-                        currentTranslationText = innerData.dst; // 更新目标语言（中文）翻译文本
-                    }
-                    // 收到完整的转写和翻译结果，立即更新UI的两个部分
-                    updateUI(currentTranscriptionText, currentTranslationText);
-                } 
-                // 其次，处理纯转写消息 (不带翻译，但包含 cn.st 结构)
-                // 这种情况下，我们只更新转写原文部分，不影响翻译部分
-                else if (innerData.cn && innerData.cn.st) {
+                    tempTranscriptionFragment = innerData.src || "";
+                    tempTranslationFragment = innerData.dst || "";
+                    console.log(`[翻译流更新] 临时翻译: "${tempTranslationFragment}"`);
+                }
+
+                // 2. 处理带有 "cn.st" 结构的消息
+                //    这类消息包含了更准确的原文，并且携带了关键的 "最终" 标志
+                if (innerData.cn && innerData.cn.st) {
                     let segmentText = "";
                     innerData.cn.st.rt.forEach(segment => {
                         if (segment.ws) {
                             segment.ws.forEach(word => {
-                                if (word.cw) {
-                                    word.cw.forEach(char => {
-                                        segmentText += char.w;
-                                    });
-                                }
+                                word.cw?.forEach(char => {
+                                    segmentText += char.w;
+                                });
                             });
                         }
                     });
                     
-                    // 仅更新 currentTranscriptionText
-                    currentTranscriptionText = segmentText; 
-                    // 并且只更新 UI 中的转写文本框，不触发完整的 updateUI 导致翻译框闪烁或清空
-                    transcriptionContentDiv.textContent = currentTranscriptionText;
+                    if (segmentText) {
+                         tempTranscriptionFragment = segmentText; // 使用这个消息的转写文本，通常更准
+                    }
 
-                    console.log("收到纯转写消息 (seg_id:", innerData.seg_id, ")，内容:", segmentText, "。已实时更新转写原文。");
-                } else {
-                    console.warn("未知的 result data 结构，请检查科大讯飞文档或 WebSocket 返回:", innerData);
+                    // 3. 如果收到了最终标志 (isFinal 为 true)
+                    if (isFinal) {
+                        console.log(`[最终结果确认] 转写: "${tempTranscriptionFragment}"`);
+                        console.log(`[最终结果确认] 翻译: "${tempTranslationFragment}"`);
+
+                        // 将当前的临时片段“固化”到最终结果中
+                        if (tempTranscriptionFragment) {
+                            finalizedTranscriptionText += tempTranscriptionFragment.trim() + " ";
+                        }
+                        if (tempTranslationFragment) {
+                            finalizedTranslationText += tempTranslationFragment.trim() + " ";
+                        }
+
+                        // 清空临时片段，为下一句话做准备
+                        tempTranscriptionFragment = "";
+                        tempTranslationFragment = "";
+                    }
                 }
+
+                // 4. 每次收到消息后，都用“最终结果 + 当前临时片段”来更新UI
+                updateUI(
+                    finalizedTranscriptionText + tempTranscriptionFragment,
+                    finalizedTranslationText + tempTranslationFragment
+                );
                 break;
+
             default:
                 console.log("未知消息类型或 action:", res);
         }
@@ -273,10 +296,12 @@ document.addEventListener('DOMContentLoaded', () => {
         startButton.disabled = false; // 启用开始按钮
         stopButton.disabled = true;   // 禁用停止按钮
         
-        // 清空文本内容并显示默认提示
-        currentTranscriptionText = "等待语音输入...";
-        currentTranslationText = "等待翻译内容...";
-        updateUI(currentTranscriptionText, currentTranslationText);
+       // 清空所有文本状态并显示默认提示
+        finalizedTranscriptionText = "";
+        finalizedTranslationText = "";
+        tempTranscriptionFragment = "";
+        tempTranslationFragment = "";
+        updateUI("等待语音输入...", "等待翻译内容...");
         
         console.log("停止录音流程完成。");
     }
