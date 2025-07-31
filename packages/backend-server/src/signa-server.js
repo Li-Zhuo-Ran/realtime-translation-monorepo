@@ -9,8 +9,8 @@ const port = 3000;
 // --- 配置你的 AppID 和 APIKey ---
 // **重要：请替换成你在科大讯飞控制台获取的真实 AppID 和 APIKey！**
 // **务必保护好你的 APIKey，不要泄露！**
-const YOUR_APPID = 'b93d1928'; // 从科大讯飞控制台获取
-const YOUR_APIKEY = '375ca086c99776d92cd32a9fecba7041'; // 从科大讯飞控制台获取，务必保密！
+const YOUR_APPID = ''; // 从科大讯飞控制台获取
+const YOUR_APIKEY = ''; // 从科大讯飞控制台获取，务必保密！
 
 // 使用 cors 中间件来处理跨域请求
 app.use(cors());
