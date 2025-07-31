@@ -12,11 +12,11 @@
             padding: 20px;
             background-color: white;
             color: black;
+            overflow: hidden; /* 防止在拖动/调整大小时出现不必要的滚动条 */
         }
         .controls {
-            position: absolute;
-            top: 20px;
-            left: 20px;
+            position: relative; /* 确保它在正常文档流中，以便计算浮窗位置 */
+            margin-bottom: 20px; /* 在控制按钮下方留出一些空间 */
             display: flex;
             gap: 10px;
         }
@@ -36,34 +36,54 @@
 
         /* 浮窗样式 */
         #translationFloatWindow {
-            display: none;
-            position: fixed;
-            bottom: 20px;
+            display: none; /* 默认隐藏，由 app.js 控制显示 */
+            position: fixed; /* 保持固定定位，方便拖动 */
+            top: 100px; /* 初始顶部位置，会在 JS 中动态调整 */
             left: 50%;
-            transform: translateX(-50%);
-            width: 90%;
-            max-width: 700px;
+            transform: translateX(-50%); /* 水平居中 */
+            width: 500px; /* 初始宽度 */
+            height: auto; /* 高度自适应内容，或由调整大小控制 */
+            min-width: 300px; /* 最小宽度 */
+            min-height: 200px; /* 最小高度 */
             background-color: white;
             border: 1px solid black;
             box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-            padding: 15px;
-            box-sizing: border-box;
             z-index: 1000;
+            overflow: hidden; /* 隐藏超出边界的调整大小把手 */
+            resize: none; /* 禁用浏览器原生的调整大小功能 */
+            box-sizing: border-box; /* 边框和内边距包含在元素的总宽度和高度内 */
         }
-        #translationFloatWindow h3 {
-            margin-top: 0;
-            margin-bottom: 10px;
+
+        /* app.js 会添加这个类来显示浮窗 */
+        #translationFloatWindow.active {
+            display: block;
+        }
+
+        .window-header {
+            cursor: grab; /* 指示可拖动 */
+            padding: 10px 15px;
+            background-color: #f0f0f0;
             border-bottom: 1px solid black;
-            padding-bottom: 5px;
             font-size: 16px;
+            user-select: none; /* 拖动时防止文本被选中 */
         }
+
+        .window-content {
+            padding: 15px;
+            overflow-y: auto; /* 允许内容在窗口较小时滚动 */
+            box-sizing: border-box;
+            display: flex; /* 使用 flex 布局让子元素分配空间 */
+            flex-direction: column; /* 垂直排列 */
+            height: calc(100% - 40px); /* 初始高度，app.js 启动时会计算 */
+        }
+
         /* 统一内容区域的样式，包括转写和翻译的文本框 */
-        .content-box { /* 新增类名，取代原来的 #translationContent ID */
+        .content-box {
             white-space: pre-wrap;
             word-wrap: break-word;
-            min-height: 80px;
-            max-height: 250px;
-            overflow-y: auto;
+            min-height: 60px; /* 最小高度 */
+            max-height: 100px; /* **关键修改：降低最大高度，使其更容易出现滚动条** */
+            overflow-y: auto; /* 单个文本框内容超出时可滚动 */
             border: 1px solid #ccc; /* 给每个文本框加边框 */
             padding: 10px;
             font-size: 1em;
@@ -71,15 +91,57 @@
             text-align: left;
             margin-top: 5px; /* 上下间隔 */
             margin-bottom: 10px; /* 上下间隔 */
+            flex-grow: 1; /* 让文本框在 flex 容器中自动增长，分配可用空间 */
+            display: flex; /* 内部也使用 flex 确保内容滚动 */
+            flex-direction: column;
         }
         .text-section {
             margin-bottom: 8px; /* 各个文本部分之间的间隔 */
+            display: flex; /* 使用 flex 布局 */
+            flex-direction: column; /* 垂直排列 */
+            flex-grow: 1; /* 让每个 section 分配可用空间 */
         }
         .text-section strong {
             display: block;
             margin-bottom: 3px;
             font-size: 0.9em;
         }
+
+        /* 调整大小把手样式 */
+        .resizer {
+            position: absolute;
+            background: transparent; /* 使把手透明 */
+            z-index: 1001; /* 确保把手在内容之上 */
+        }
+
+        /* 角落把手 */
+        .resizer.nw, .resizer.se { width: 10px; height: 10px; cursor: nwse-resize; }
+        .resizer.ne, .resizer.sw { width: 10px; height: 10px; cursor: nesw-resize; }
+        /* 边缘把手 */
+        .resizer.n, .resizer.s { left: 5px; right: 5px; height: 5px; cursor: ns-resize; }
+        .resizer.w, .resizer.e { top: 5px; bottom: 5px; width: 5px; cursor: ew-resize; }
+
+        /* 定位各个把手 */
+        .resizer.nw { top: 0; left: 0; }
+        .resizer.ne { top: 0; right: 0; }
+        .resizer.sw { bottom: 0; left: 0; }
+        .resizer.se { bottom: 0; right: 0; }
+        .resizer.n { top: 0; }
+        .resizer.s { bottom: 0; }
+        .resizer.w { left: 0; }
+        .resizer.e { right: 0; }
+
+        /* 拖动/调整大小时的 body 光标样式 */
+        body.resizing-n { cursor: ns-resize; }
+        body.resizing-s { cursor: ns-resize; }
+        body.resizing-w { cursor: ew-resize; }
+        body.resizing-e { cursor: ew-resize; }
+        body.resizing-nw { cursor: nwse-resize; }
+        body.resizing-ne { cursor: nesw-resize; }
+        body.resizing-sw { cursor: nesw-resize; }
+        body.resizing-se { cursor: nwse-resize; }
+        body.dragging { cursor: grabbing; }
+
     </style>
 </head>
 <body>
@@ -88,27 +150,180 @@
         <button id="stopButton" disabled>结束</button>
     </div>
 
-    <!-- 浮窗区域 -->
     <div id="translationFloatWindow">
-        <h3>实时转写与翻译</h3>
-        
-        <!-- 转写内容区域 -->
-        <div class="text-section">
-            <strong>实时转写 (原语言):</strong>
-            <div id="transcriptionContent" class="content-box">等待语音输入...</div>
+        <div class="window-header">实时转写与翻译</div>
+        <div class="window-content">
+            <div class="text-section">
+                <strong>实时转写 (原语言):</strong>
+                <div id="transcriptionContent" class="content-box">等待语音输入...</div>
+            </div>
+            
+            <div class="text-section">
+                <strong>实时翻译 (目标语言):</strong>
+                <div id="translationResultContent" class="content-box">等待翻译内容...</div>
+            </div>
         </div>
-        
-        <!-- 翻译内容区域 -->
-        <div class="text-section">
-            <strong>实时翻译 (目标语言):</strong>
-            <div id="translationResultContent" class="content-box">等待翻译内容...</div>
-        </div>
+
+        <div class="resizer nw"></div>
+        <div class="resizer ne"></div>
+        <div class="resizer sw"></div>
+        <div class="resizer se"></div>
+        <div class="resizer n"></div>
+        <div class="resizer s"></div>
+        <div class="resizer w"></div>
+        <div class="resizer e"></div>
     </div>
 
-    <!-- 导入科大讯飞 SDK 所需的辅助加密库 -->
-    <script src="./index.umd.js"></script> <!-- 引入 RecorderManager 的通用打包文件 -->
-
-    <!-- 引入你自己的应用逻辑脚本 -->
+    <script src="./index.umd.js"></script> 
     <script src="app.js"></script>
+
+    <script>
+        // 以下是浮窗拖动和调整大小的JavaScript代码
+        // 这段代码应该放在 app.js 之后，以确保 DOM 元素已经加载。
+        const floatWindow = document.getElementById('translationFloatWindow');
+        const header = floatWindow.querySelector('.window-header');
+        const resizers = document.querySelectorAll('.resizer');
+        const windowContent = floatWindow.querySelector('.window-content'); // 获取内容区域
+
+        let isDragging = false;
+        let isResizing = false;
+        let startX, startY, startWidth, startHeight, startLeft, startTop;
+        let currentResizer = null;
+
+        // 拖动功能
+        header.addEventListener('mousedown', (e) => {
+            if (e.target !== header) return; // 只从标题栏本身拖动，而不是其子元素
+
+            isDragging = true;
+            document.body.classList.add('dragging'); // 添加拖动时的光标样式
+            startX = e.clientX;
+            startY = e.clientY;
+            startLeft = floatWindow.offsetLeft;
+            startTop = floatWindow.offsetTop;
+
+            e.preventDefault(); // 阻止文本选择
+        });
+
+        // 调整大小功能
+        resizers.forEach(resizer => {
+            resizer.addEventListener('mousedown', (e) => {
+                isResizing = true;
+                currentResizer = resizer;
+                document.body.classList.add('resizing-' + resizer.classList[1]); // 添加特定方向的调整大小光标
+                
+                startX = e.clientX;
+                startY = e.clientY;
+                startWidth = floatWindow.offsetWidth;
+                startHeight = floatWindow.offsetHeight;
+                startLeft = floatWindow.offsetLeft;
+                startTop = floatWindow.offsetTop;
+
+                e.preventDefault(); // 阻止文本选择
+            });
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (isDragging) {
+                const dx = e.clientX - startX;
+                const dy = e.clientY - startY;
+
+                floatWindow.style.left = (startLeft + dx) + 'px';
+                floatWindow.style.top = (startTop + dy) + 'px';
+                floatWindow.style.transform = 'none'; // 拖动时移除 transform
+            } else if (isResizing && currentResizer) {
+                const dx = e.clientX - startX;
+                const dy = e.clientY - startY;
+
+                const classList = currentResizer.classList;
+
+                let newWidth = startWidth;
+                let newHeight = startHeight;
+                let newLeft = startLeft;
+                let newTop = startTop;
+
+                // 边缘调整大小
+                if (classList.contains('e')) { // 右边缘
+                    newWidth = Math.max(floatWindow.minWidth || 300, startWidth + dx);
+                } else if (classList.contains('w')) { // 左边缘
+                    newWidth = Math.max(floatWindow.minWidth || 300, startWidth - dx);
+                    newLeft = startLeft + dx;
+                }
+                if (classList.contains('s')) { // 下边缘
+                    newHeight = Math.max(floatWindow.minHeight || 200, startHeight + dy);
+                } else if (classList.contains('n')) { // 上边缘
+                    newHeight = Math.max(floatWindow.minHeight || 200, startHeight - dy);
+                    newTop = startTop + dy;
+                }
+                
+                // 角落调整大小
+                if (classList.contains('se')) { // 右下角
+                    newWidth = Math.max(floatWindow.minWidth || 300, startWidth + dx);
+                    newHeight = Math.max(floatWindow.minHeight || 200, startHeight + dy);
+                } else if (classList.contains('sw')) { // 左下角
+                    newWidth = Math.max(floatWindow.minWidth || 300, startWidth - dx);
+                    newHeight = Math.max(floatWindow.minHeight || 200, startHeight + dy);
+                    newLeft = startLeft + dx;
+                } else if (classList.contains('ne')) { // 右上角
+                    newWidth = Math.max(floatWindow.minWidth || 300, startWidth + dx);
+                    newHeight = Math.max(floatWindow.minHeight || 200, startHeight - dy);
+                    newTop = startTop + dy;
+                } else if (classList.contains('nw')) { // 左上角
+                    newWidth = Math.max(floatWindow.minWidth || 300, startWidth - dx);
+                    newHeight = Math.max(floatWindow.minHeight || 200, startHeight - dy);
+                    newLeft = startLeft + dx;
+                    newTop = startTop + dy;
+                }
+
+                floatWindow.style.width = newWidth + 'px';
+                floatWindow.style.height = newHeight + 'px';
+                floatWindow.style.left = newLeft + 'px';
+                floatWindow.style.top = newTop + 'px';
+
+                // 重新计算 windowContent 的高度，以适应新的浮窗高度
+                // 确保 padding 也被考虑进去
+                const headerHeight = header.offsetHeight;
+                const contentPaddingTop = parseFloat(window.getComputedStyle(windowContent).paddingTop);
+                const contentPaddingBottom = parseFloat(window.getComputedStyle(windowContent).paddingBottom);
+                const totalContentPadding = contentPaddingTop + contentPaddingBottom;
+                windowContent.style.height = `${floatWindow.offsetHeight - headerHeight - totalContentPadding}px`;
+            }
+        });
+
+        document.addEventListener('mouseup', () => {
+            if (isDragging) {
+                isDragging = false;
+                document.body.classList.remove('dragging');
+            }
+            if (isResizing) {
+                isResizing = false;
+                // 移除所有调整大小的光标类
+                document.body.classList.remove('resizing-n', 'resizing-s', 'resizing-w', 'resizing-e', 'resizing-nw', 'resizing-ne', 'resizing-sw', 'resizing-se');
+                currentResizer = null;
+            }
+        });
+
+        // 页面加载完成后，初始定位浮窗并计算内容区高度
+        window.addEventListener('load', () => {
+            const controlsHeight = document.querySelector('.controls').offsetHeight;
+            floatWindow.style.top = (controlsHeight + 30) + 'px'; // 30px 的额外间距
+
+            // 首次加载时计算并设置 windowContent 的高度
+            const headerHeight = header.offsetHeight;
+            const contentPaddingTop = parseFloat(window.getComputedStyle(windowContent).paddingTop);
+            const contentPaddingBottom = parseFloat(window.getComputedStyle(windowContent).paddingBottom);
+            const totalContentPadding = contentPaddingTop + contentPaddingBottom;
+            windowContent.style.height = `${floatWindow.offsetHeight - headerHeight - totalContentPadding}px`;
+        });
+
+        // 当窗口调整大小时，重新计算 windowContent 的高度
+        window.addEventListener('resize', () => {
+            const headerHeight = header.offsetHeight;
+            const contentPaddingTop = parseFloat(window.getComputedStyle(windowContent).paddingTop);
+            const contentPaddingBottom = parseFloat(window.getComputedStyle(windowContent).paddingBottom);
+            const totalContentPadding = contentPaddingTop + contentPaddingBottom;
+            windowContent.style.height = `${floatWindow.offsetHeight - headerHeight - totalContentPadding}px`;
+        });
+
+    </script>
 </body>
 </html>
